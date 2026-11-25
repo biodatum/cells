@@ -163,6 +163,8 @@ details li{margin-bottom:6px}
 .kurve .ideal{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 5}
 .kurve .neben{fill:none;stroke:var(--c-p1);stroke-width:2.2;stroke-dasharray:7 4}
 .kurve .pkt{fill:var(--accent)}
+.roehre-rahmen{overflow-x:auto}
+#cRoehre{display:block;width:100%;min-width:640px;height:auto}
 .diagnose{margin:8px 0 0;padding-left:1.2em}
 .diagnose li{margin-bottom:6px}
 .diagnose li.gut::marker{color:var(--accent)}
@@ -511,6 +513,21 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
       </div>
 
       <div class="karte">
+        <h3>Blick ins Röhrchen</h3>
+        <p class="klein" style="margin-top:0">Ein stark vergrößerter Ausschnitt des Gemischs, passend zum Lauf: Die Doppelstränge trennen sich bei der Denaturierung, Primer lagern sich an, die Polymerase verlängert sie. Ziehe mit „Start“ los oder halte an, um einen Schritt genau anzusehen.</p>
+        <div class="roehre-rahmen"><canvas id="cRoehre" width="900" height="300" role="img" aria-label="Vergrößerter Ausschnitt aus dem Reaktionsgemisch mit DNA-Strängen, Primern, Nukleotiden und Polymerase"></canvas></div>
+        <p class="klein" id="cMassstab" aria-live="polite"></p>
+        <div class="legende">
+          <span><i class="linie" style="background:var(--muted)"></i>Ausgangs-DNA</span>
+          <span><i class="linie" style="background:var(--accent)"></i>neu gebauter Strang</span>
+          <span><i class="linie" style="background:var(--c-p1)"></i>Primer 1</span>
+          <span><i class="linie" style="background:var(--c-p2)"></i>Primer 2</span>
+          <span><i class="pfeil"></i>Polymerase</span>
+          <span><i style="background:var(--muted);width:6px;height:6px;border-radius:50%"></i>Nukleotide</span>
+        </div>
+      </div>
+
+      <div class="karte">
         <h3>Temperatur im Block</h3>
         <label class="schalter"><input type="checkbox" id="cZoom"> nur die letzten 6 Minuten zeigen</label>
         <svg class="kurve diagramm" id="cKurveT" viewBox="0 0 640 200" role="img" aria-label="Temperatur des Blocks gegen die Zeit"></svg>
@@ -550,6 +567,7 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
       <li>Ein Zyklus dauert im Gerät etwa 1 bis 3 Minuten; die Temperaturen werden nicht sofort erreicht. Die Zeiten und das Aufheizen und Abkühlen in der Seite sind für die Anschauung gewählt.</li>
       <li>Thermocycler-Ansicht: Die Menge wird mit einer einfachen Formel gerechnet, nicht Molekül für Molekül. In jedem Zyklus wächst die Zahl der Kopien um den Faktor 1 + E. Die Ausbeute E ist höchstens 95 % und sinkt, wenn die Denaturierung zu kalt ist, die Primeranlagerung zu heiß oder die Elongation zu kurz (die Taq-Polymerase baut bei 72 °C etwa 1 000 Basen pro Minute an). Sie sinkt auch, wenn schon sehr viele Kopien da sind: Dann paaren sich die Produktstränge lieber wieder miteinander als mit den Primern, und Primer und Nukleotide werden knapp. So entsteht das Plateau nach etwa 30 Zyklen. Alle Zahlen dieser Formel sind grobe, gerundete Annahmen.</li>
       <li>Nebenprodukte entstehen im Modell nur, wenn die Primeranlagerung mehr als 10 °C unter der Schmelztemperatur der Primer liegt; sie vermehren sich dann wie das Ziel. In Wirklichkeit gibt es auch Primerdimere und andere Fehlprodukte. Die Taq-Polymerase verliert bei 95 °C langsam an Aktivität (Halbwertszeit im Modell 40 Minuten bei 95 °C und 9 Minuten bei 97,5 °C). Heizen mit 3 °C und Kühlen mit 2 °C pro Sekunde sind typische Werte für Geräte im Schullabor.</li>
+      <li>Blick ins Röhrchen: Gezeigt sind höchstens etwa 30 Moleküle. Wird es voller, wird die Hälfte weggelassen, und jedes gezeigte Molekül steht für doppelt so viele (die Zahl steht unter dem Bild). Ob ein Strang getrennt, mit Primer besetzt und fertig verlängert wird, ist zufällig, mit den Wahrscheinlichkeiten aus dem Modell. Alle Stränge sind gleich lang gezeichnet; dass in den ersten Zyklen längere Stränge mit Randstücken entstehen, zeigt die Ansicht „Moleküle“. Nebenprodukte sind im Bild nicht gezeigt. Die Moleküle bewegen sich bei hoher Temperatur stärker (Wärmebewegung). Größen und Abstände sind nicht maßstäblich: Ein echtes Röhrchen enthält Milliarden Primer und Nukleotide.</li>
       <li>Die grüne Farbe der Röhrchen zeigt die DNA-Menge, wie sie ein Farbstoff in der Echtzeit-PCR (qPCR) sichtbar macht: erst ab etwa 10<sup>9</sup> Kopien. Ohne Farbstoff sieht man in einem echten Gerät nichts. Die Zahl der Zyklen, bis das Signal erscheint, hängt von der Ausgangsmenge ab: 100-mal mehr DNA erscheint etwa 7 Zyklen früher.</li>
       <li>Die Gelelektrophorese, mit der man die Produkte nach der Länge trennt und sichtbar macht, ist noch nicht auf einer eigenen Seite umgesetzt.</li>
     </ul>
@@ -634,7 +652,7 @@ const PALETTE = (() => {
 //                             opt:  {N0, laenge, tm, pol: "taq" | "normal", heiz, kuehl, dt}
 //        → {spur: [[t, T]], zyklen: [{n, t, N, M, E, akt, fDen, fAnl, fEla}], phasen: [{name, zyklus, t0, t1, T}], dauer, tmProdukt, nmax}
 //        N: Zahl der Zielmoleküle (Doppelstränge), M: Nebenprodukte (nur bei zu kalter Anlagerung), E: Ausbeute des Zyklus (0 … 1),
-//        akt: verbliebene Aktivität der Polymerase (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
+//        akt: verbliebene Aktivität der Polymerase (0 … 1), frei: Anteil der noch verfügbaren Primer und Nukleotide (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
 const PCR = (() => {
   const KOMP = {A: "T", T: "A", G: "C", C: "G"};
   const STANDARD = {rand: 4, ziel: 20, primer: 5};
@@ -718,7 +736,7 @@ const PCR = (() => {
       phasen.push({name, zyklus: zyk, t0, tHalt, t1: t, T: Tz});
     }
     let N = o.N0, M = 0;
-    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0});
+    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0, frei: 1});
     if (prog.start && prog.start.s > 0) fahre("Erste Denaturierung", prog.start.T, prog.start.s, 0);
     for (let n = 1; n <= prog.n; n++){
       fahre("Denaturierung", prog.den.T, prog.den.s, n);
@@ -733,14 +751,14 @@ const PCR = (() => {
       const E = EMAX * a * b * c * frei;
       const Mneu = M * (1 + EMAX * a * c * frei) + N * nb * a * c * frei;   // Nebenprodukte entstehen an falschen Stellen und vermehren sich dann wie das Ziel
       N = N * (1 + E); M = Mneu;
-      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c});
+      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c, frei});
     }
     if (prog.ende && prog.ende.s > 0) fahre("Letzte Elongation", prog.ende.T, prog.ende.s, prog.n);
     if (prog.halt !== undefined && prog.halt !== null) fahre("Kühlen", prog.halt, 0, prog.n);
     return {spur, zyklen, phasen, dauer: t, tmProdukt: tmP, nmax: NMAX};
   }
 
-  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, KOMP};
+  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, EMAX, KOMP};
 })();
 /*__/PCR__*/
 </script>
@@ -1065,6 +1083,7 @@ aufbauen(true);
 /* ---------- Ansicht „Im Thermocycler“ ---------- */
 (() => {
 "use strict";
+const RUHIG = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
 const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
@@ -1113,7 +1132,7 @@ function programm(){
 
 /* Zustand */
 let L, P, t = 0, laeuft = false, raf = 0, letzte = 0;
-function rechne(){ P = programm(); L = PCR.lauf(P.prog, P.opt); t = 0; diagnose(); }
+function rechne(){ P = programm(); L = PCR.lauf(P.prog, P.opt); t = 0; diagnose(); simuliere(); }
 function temperatur(tt){
   const s = L.spur; if (tt <= 0) return s[0][1]; if (tt >= L.dauer) return s[s.length - 1][1];
   let a = 0, b = s.length - 1;
@@ -1277,6 +1296,210 @@ function diagnose(){
   if (o.N0 > 0 && zn.N > 0) punkt("gut", `Am Ende sind etwa ${kopien(zn.N)} Kopien da, ${kopien(zn.N / o.N0)}-mal so viele wie am Anfang. Bei Verdopplung in jedem Zyklus wären es ${kopien(Math.min(o.N0 * Math.pow(2, pr.n), 1e30))}.`);
 }
 
+
+/* ---------- Blick ins Röhrchen ---------- */
+// Ein Ausschnitt mit wenigen Molekülen. Jeder Strang entscheidet je Zyklus zufällig (mit festem Startwert), ob er
+// getrennt, mit Primer besetzt und fertig verlängert wird; die Wahrscheinlichkeiten kommen aus dem Modell PCR.lauf.
+// Wird der Ausschnitt zu voll, wird die Hälfte weggelassen: Jedes gezeigte Molekül steht dann für doppelt so viele.
+const RW = 900, RH = 300, RAND = 26, LEN = 78, CAP = 28;
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; };
+let SIM = null;
+function simuliere(){
+  const r0 = rng(4711), home = {}, str = {};
+  let nid = 0, skala = 1;
+  const neuerOrt = () => [RAND + 70 + r0() * (RW - 2 * RAND - 140), RAND + 40 + r0() * (RH - 2 * RAND - 80)];
+  const N0 = P.opt.N0, n0 = Math.min(N0, 4);
+  skala = n0 ? N0 / n0 : 1;
+  let paare = [], einzel = [];
+  for (let i = 0; i < n0; i++){
+    const a = nid++, b = nid++;
+    str[a] = {art: "o", neu: false, pr: null}; str[b] = {art: "u", neu: false, pr: null};
+    home[a] = neuerOrt(); paare.push([a, b]);
+  }
+  const zust = [{paare: paare.map(p => p.slice()), einzel: einzel.slice(), home: Object.assign({}, home), skala}];
+  const ent = [null];
+  const halte = p => [Math.max(RAND + 30, Math.min(RW - RAND - 30, p[0])), Math.max(RAND + 22, Math.min(RH - RAND - 22, p[1]))];
+  for (let k = 1; k <= P.prog.n; k++){
+    const z = L.zyklen[k], r = rng(1000 + k), PR = PCR.EMAX * z.fAnl * z.frei;
+    const D = {paare: [], vorlagen: {}, skalaAlt: skala};
+    const vorl = [];
+    for (const [a, b] of paare){
+      const sep = r() < z.fDen, w = r() * Math.PI * 2;
+      D.paare.push({a, b, sep, o: [Math.cos(w) * 20, Math.sin(w) * 20]});
+      if (sep) vorl.push(a, b);
+    }
+    for (const s of einzel) vorl.push(s);
+    for (const s of vorl){
+      const primed = r() < PR, fertig = primed && r() < z.fEla;
+      D.vorlagen[s] = {primed, wachs: fertig ? 1 : primed ? Math.min(0.85, z.fEla) : 0, fertig};
+    }
+    // neuer Zustand
+    const np = [], ne = [];
+    const pos = {};
+    for (const q of D.paare){
+      if (!q.sep){ np.push([q.a, q.b]); pos[q.a] = home[q.a]; continue; }
+      const P0 = home[q.a];
+      pos[q.a] = halte([P0[0] + q.o[0], P0[1] + q.o[1]]); pos[q.b] = halte([P0[0] - q.o[0], P0[1] - q.o[1]]);
+      const fa = D.vorlagen[q.a].fertig, fb = D.vorlagen[q.b].fertig;
+      if (!fa && !fb){ np.push([q.a, q.b]); q.wieder = true; pos[q.a] = P0; continue; }
+    }
+    for (const s of einzel) pos[s] = home[s];
+    for (const s of vorl){
+      const v = D.vorlagen[s];
+      if (v.fertig){
+        const id = nid++, art = str[s].art === "o" ? "u" : "o";
+        str[id] = {art, neu: true, pr: art === "o" ? "p1" : "p2"}; v.neu = id;
+        np.push([s, id]); home[s] = pos[s];
+      } else {
+        const q = D.paare.find(q => q.a === s || q.b === s);
+        if (q && q.wieder) continue;
+        ne.push(s); home[s] = pos[s];
+      }
+    }
+    paare = np; einzel = ne;
+    // Wärmebewegung zwischen den Zyklen: die Moleküle verteilen sich (gegenseitig abstoßen, im Bild bleiben)
+    const keys = paare.map(q => q[0]).concat(einzel), X = keys.map(q => { const h = home[q]; return [h[0] + (r() - 0.5) * 40, h[1] + (r() - 0.5) * 30]; });
+    const x0 = RAND + 50, x1 = RW - RAND - 50, y0 = RAND + 26, y1 = RH - RAND - 26;
+    for (let it = 0; it < 60; it++){
+      for (let i = 0; i < X.length; i++) for (let j = i + 1; j < X.length; j++){
+        const dx = X[j][0] - X[i][0], dy = (X[j][1] - X[i][1]) * 1.6, d = Math.hypot(dx, dy) || 0.01, soll = 120;
+        if (d < soll){ const f = (soll - d) / d * 0.25; X[i][0] -= dx * f; X[i][1] -= dy * f / 1.6; X[j][0] += dx * f; X[j][1] += dy * f / 1.6; }
+      }
+      X.forEach(q => { q[0] = Math.max(x0, Math.min(x1, q[0])); q[1] = Math.max(y0, Math.min(y1, q[1])); });
+    }
+    D.ziel = {}; keys.forEach((q, i) => { D.ziel[q] = X[i]; home[q] = X[i]; });
+    // zu voll: die Hälfte weglassen
+    while (paare.length + einzel.length > CAP){
+      paare = paare.filter(() => r() < 0.5); einzel = einzel.filter(() => r() < 0.5); skala *= 2;
+    }
+    ent.push(D);
+    zust.push({paare: paare.map(p => p.slice()), einzel: einzel.slice(), home: Object.assign({}, home), skala});
+  }
+  SIM = {zust, ent, str, nAnz: n0};
+}
+
+let farbe = {};
+function leseFarben(){
+  const cs = getComputedStyle(document.documentElement);
+  ["--muted", "--accent", "--c-p1", "--c-p2", "--c-taq", "--surface", "--surface2", "--line", "--ink", "--c-heiss", "--c-kalt"].forEach(v => farbe[v] = cs.getPropertyValue(v).trim());
+}
+const glatt = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+function wackel(id, zeit, amp){
+  if (RUHIG) return [0, 0, 0];
+  const a = id * 1.7, f = 0.0004 + (id % 7) * 0.00006;
+  return [amp * Math.sin(zeit * f + a), amp * Math.cos(zeit * f * 1.3 + a * 2), 0.18 * Math.sin(zeit * f * 0.8 + a * 3)];
+}
+const winkel = id => ((id * 2654435761) % 1000) / 1000 * 0.9 - 0.45;
+// Strang als Linie: Mitte m, Richtung w, Versatz senkrecht d, von Anteil u0 bis u1 der Länge (0 = linkes Ende)
+function linie(ctx, m, w, d, u0, u1, col, dick){
+  const c = Math.cos(w), s = Math.sin(w), nx = -s * d, ny = c * d;
+  ctx.strokeStyle = col; ctx.lineWidth = dick || 4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(m[0] + c * LEN * (u0 - 0.5) + nx, m[1] + s * LEN * (u0 - 0.5) + ny); ctx.lineTo(m[0] + c * LEN * (u1 - 0.5) + nx, m[1] + s * LEN * (u1 - 0.5) + ny); ctx.stroke();
+}
+function strangFarbe(id){ return SIM.str[id].neu ? farbe["--accent"] : farbe["--muted"]; }
+function strang(ctx, m, w, d, id){   // ganzer Strang; bei neuen Strängen der Primer am 5'-Ende farbig
+  const st = SIM.str[id];
+  linie(ctx, m, w, d, 0, 1, strangFarbe(id));
+  if (st.pr) linie(ctx, m, w, d, st.art === "o" ? 0 : 0.8, st.art === "o" ? 0.2 : 1, farbe[st.pr === "p1" ? "--c-p1" : "--c-p2"]);
+}
+// neuer Strang an Vorlage v (Richtung: wächst vom 3'-Ende der Vorlage weg), Anteil g fertig
+function neuerStrang(ctx, m, w, d, vorlArt, g, prFarbe, mitTaq){
+  if (g <= 0) return;
+  const vonRechts = vorlArt === "o";          // obere Vorlage: 3'-Ende rechts, neuer Strang wächst nach links
+  const pl = 0.2;
+  const u = x => vonRechts ? 1 - x : x;
+  linie(ctx, m, w, d, Math.min(u(0), u(Math.min(g, pl))), Math.max(u(0), u(Math.min(g, pl))), prFarbe);
+  if (g > pl) linie(ctx, m, w, d, Math.min(u(pl), u(g)), Math.max(u(pl), u(g)), farbe["--accent"]);
+  if (mitTaq && g < 1){
+    const c = Math.cos(w), s = Math.sin(w), x = m[0] + c * LEN * (u(g) - 0.5) - s * d, y = m[1] + s * LEN * (u(g) - 0.5) + c * d, r = vonRechts ? -1 : 1;
+    ctx.fillStyle = farbe["--c-taq"]; ctx.beginPath(); ctx.moveTo(x + r * c * 9 - s * 0, y + r * s * 9); ctx.lineTo(x - s * 7 - r * c * 3, y + c * 7 - r * s * 3); ctx.lineTo(x + s * 7 - r * c * 3, y - c * 7 - r * s * 3); ctx.closePath(); ctx.fill();
+  }
+}
+function zeichneRoehre(){
+  const cv = $("cRoehre"); if (!cv || !SIM || $("s-cycler").hidden) return;
+  const ctx = cv.getContext("2d"), zeit = performance.now();
+  const T = temperatur(t), ph = t > 0 ? phase(t) : null, amp = 3 + 6 * T / 95;
+  ctx.clearRect(0, 0, RW, RH);
+  // Flüssigkeit, leicht nach Temperatur getönt
+  ctx.fillStyle = farbe["--surface2"]; ctx.strokeStyle = farbe["--line"]; ctx.lineWidth = 2;
+  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(4, 4, RW - 8, RH - 8, 18); else ctx.rect(4, 4, RW - 8, RH - 8); ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = 0.1 + 0.12 * Math.abs(T - 50) / 50; ctx.fillStyle = T > 50 ? farbe["--c-heiss"] : farbe["--c-kalt"]; ctx.fill(); ctx.globalAlpha = 1;
+  // Welcher Zyklus, welcher Schritt?
+  let k = 0, D = null, sp = 0, anl = 0, ela = 0, wieder = 0;
+  const halt = ph ? glatt((t - ph.tHalt) / Math.max(1, ph.t1 - ph.tHalt)) : 0, ganz = ph ? glatt((t - ph.t0) / Math.max(1, ph.t1 - ph.t0) * 1.4) : 0;
+  if (ph){
+    if (ph.name === "Erste Denaturierung"){ k = 0; D = SIM.ent[1]; sp = ganz; }
+    else if (["Denaturierung", "Primeranlagerung", "Elongation"].includes(ph.name)){
+      k = ph.zyklus - 1; D = SIM.ent[ph.zyklus];
+      sp = ph.name === "Denaturierung" ? (ph.zyklus === 1 && P.prog.start.s > 0 ? 1 : ganz) : 1;
+      anl = ph.name === "Primeranlagerung" ? halt : ph.name === "Elongation" ? 1 : 0;
+      ela = ph.name === "Elongation" ? halt : 0;
+      wieder = ph.name === "Elongation" ? halt : 0;
+    } else k = P.prog.n;
+  }
+  if (t >= L.dauer) { k = P.prog.n; D = null; }
+  const Z = SIM.zust[k], frei = L.zyklen[k].frei, lebt = P.opt.pol === "taq" || (t <= 0) || (ph && ph.name === "Erste Denaturierung" && T < 80);
+  // Nukleotide und freie Primer
+  const nNuk = Math.round(110 * frei), nPr = Math.round(22 * frei);
+  ctx.fillStyle = farbe["--muted"]; ctx.globalAlpha = 0.55;
+  for (let i = 0; i < nNuk; i++){ const w = wackel(500 + i, zeit, amp * 1.6); const x = 20 + ((i * 397) % (RW - 40)) + w[0], y = 20 + ((i * 211) % (RH - 40)) + w[1]; ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  for (let i = 0; i < nPr; i++){
+    const w = wackel(900 + i, zeit, amp * 1.4), x = 40 + ((i * 331) % (RW - 80)) + w[0], y = 30 + ((i * 157) % (RH - 60)) + w[1], a = w[2] * 3 + i;
+    ctx.strokeStyle = i % 2 ? farbe["--c-p1"] : farbe["--c-p2"]; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x - 5 * Math.cos(a), y - 5 * Math.sin(a)); ctx.lineTo(x + 5 * Math.cos(a), y + 5 * Math.sin(a)); ctx.stroke();
+  }
+  // freie Polymerasen
+  for (let i = 0; i < 5; i++){
+    const w = wackel(1300 + i, zeit, amp * 1.2), x = 90 + i * 170 + w[0], y = (i % 2 ? 60 : RH - 55) + w[1];
+    ctx.fillStyle = lebt ? farbe["--c-taq"] : farbe["--muted"]; ctx.globalAlpha = lebt ? 0.9 : 0.5;
+    ctx.beginPath();
+    if (lebt){ ctx.moveTo(x + 9, y); ctx.lineTo(x - 6, y - 8); ctx.lineTo(x - 6, y + 8); }
+    else for (let j = 0; j < 7; j++){ const rr = j % 2 ? 4 : 8, aa = j / 7 * 6.283; ctx[j ? "lineTo" : "moveTo"](x + rr * Math.cos(aa), y + rr * Math.sin(aa)); }
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  // DNA
+  const zug = ph && ph.name === "Elongation" && D ? glatt(halt) : 0;
+  const hin = (key, p) => { const z = D && D.ziel && D.ziel[key]; return z && zug ? [p[0] + (z[0] - p[0]) * zug, p[1] + (z[1] - p[1]) * zug] : p; };
+  const mitte = (id, p) => { const w = wackel(id, zeit, amp); return [p[0] + w[0], p[1] + w[1], winkel(id) + w[2]]; };
+  const anDerVorlage = (s, m, w, d) => {
+    if (!D || !D.vorlagen[s]) return;
+    const v = D.vorlagen[s], art = SIM.str[s].art, prF = art === "o" ? farbe["--c-p2"] : farbe["--c-p1"];
+    if (!v.primed || anl <= 0) return;
+    if (anl < 1){   // Primer kommt angeflogen
+      const c = Math.cos(w), sn = Math.sin(w), off = (1 - anl) * 30;
+      const m2 = [m[0] - sn * off, m[1] + c * off];
+      neuerStrang(ctx, m2, w, d, art, 0.2, prF, false); return;
+    }
+    neuerStrang(ctx, m, w, d, art, Math.max(0.2, v.wachs * Math.min(1, ela * 1.35)), prF, ela > 0 && ela * 1.35 < 1 && lebt);
+  };
+  if (D){
+    for (const q of D.paare){
+      const P0 = Z.home[q.a]; if (!P0) continue;
+      let s = q.sep ? sp : 0; if (q.wieder) s *= 1 - wieder;
+      const ma = mitte(q.a, hin(q.a, [P0[0] + q.o[0] * s, P0[1] + q.o[1] * s]));
+      if (s < 0.05){ strang(ctx, ma, ma[2], 3.2, q.a); strang(ctx, ma, ma[2], -3.2, q.b); continue; }
+      const pb = hin(q.wieder ? q.a : q.b, [P0[0] - q.o[0] * s, P0[1] - q.o[1] * s]), x1 = mitte(q.a, pb), x2 = mitte(q.b, pb), mb = x1.map((v, i) => v + (x2[i] - v) * s);
+      strang(ctx, ma, ma[2], 3.2, q.a); anDerVorlage(q.a, ma, ma[2], -3.4);
+      strang(ctx, mb, mb[2], 3.2, q.b); anDerVorlage(q.b, mb, mb[2], -3.4);
+    }
+    for (const s of Z.einzel){ const m = mitte(s, hin(s, Z.home[s])); strang(ctx, m, m[2], 3.2, s); anDerVorlage(s, m, m[2], -3.4); }
+  } else {
+    for (const [a, b] of Z.paare){ const m = mitte(a, Z.home[a]); strang(ctx, m, m[2], 3.2, a); strang(ctx, m, m[2], -3.2, b); }
+    for (const s of Z.einzel){ const m = mitte(s, Z.home[s]); strang(ctx, m, m[2], 3.2, s); }
+  }
+  if (!SIM.nAnz){ ctx.fillStyle = farbe["--muted"]; ctx.font = "600 16px " + getComputedStyle(document.body).fontFamily; ctx.textAlign = "center"; ctx.fillText("Keine Ausgangs-DNA: Hier gibt es nichts zu kopieren.", RW / 2, RH / 2); }
+  const anz = Z.paare.length, skala = Z.skala;
+  const text = SIM.nAnz ? `Im Ausschnitt: ${anz} Doppelstr${anz === 1 ? "ang" : "änge"}${Z.einzel.length ? " und " + Z.einzel.length + " Einzelstr" + (Z.einzel.length === 1 ? "ang" : "änge") : ""}. Jeder gezeigte Doppelstrang steht für etwa ${kopien(skala)} Moleküle im Röhrchen.` + (frei < 0.6 ? " Primer und Nukleotide werden knapp." : "") : "";
+  if ($("cMassstab").textContent !== text) $("cMassstab").textContent = text;
+}
+let rafR = 0;
+function roehreLoop(){ zeichneRoehre(); rafR = requestAnimationFrame(roehreLoop); }
+function roehreStart(){ cancelAnimationFrame(rafR); if (RUHIG) zeichneRoehre(); else rafR = requestAnimationFrame(roehreLoop); }
+leseFarben();
+new MutationObserver(leseFarben).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", leseFarben);
+
 /* Ablauf */
 function statusText(){
   const T = temperatur(t), ph = phase(t);
@@ -1299,7 +1522,7 @@ function statusText(){
 }
 function zeigeAlles(){
   sperre(laeuft || (t > 0 && t < L.dauer));
-  zeigeGeraet(); zeigeTemp(); statusText();
+  zeigeGeraet(); zeigeTemp(); statusText(); if (RUHIG) zeichneRoehre();
   if (fertigeZyklen(t) !== gezeigtK) zeichneMenge();
   $("cStart").textContent = laeuft ? "⏸ Pause" : t > 0 && t < L.dauer ? "▶ Weiter" : "▶ Start";
 }
@@ -1324,7 +1547,7 @@ FELDER.forEach(id => $(id).addEventListener("change", () => { if (laeuft) return
 $("cZoom").addEventListener("change", () => { zeichneTemp(); zeigeAlles(); });
 $("cLog").addEventListener("change", zeichneMenge);
 
-baueGeraet(); rechne();
+baueGeraet(); rechne(); roehreStart();
 if (location.hash === "#thermocycler") zeige("tabCyc"); else zeichneAlles();
 })();
 </script>

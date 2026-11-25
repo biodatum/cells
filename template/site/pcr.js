@@ -30,7 +30,7 @@
 //                             opt:  {N0, laenge, tm, pol: "taq" | "normal", heiz, kuehl, dt}
 //        → {spur: [[t, T]], zyklen: [{n, t, N, M, E, akt, fDen, fAnl, fEla}], phasen: [{name, zyklus, t0, t1, T}], dauer, tmProdukt, nmax}
 //        N: Zahl der Zielmoleküle (Doppelstränge), M: Nebenprodukte (nur bei zu kalter Anlagerung), E: Ausbeute des Zyklus (0 … 1),
-//        akt: verbliebene Aktivität der Polymerase (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
+//        akt: verbliebene Aktivität der Polymerase (0 … 1), frei: Anteil der noch verfügbaren Primer und Nukleotide (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
 const PCR = (() => {
   const KOMP = {A: "T", T: "A", G: "C", C: "G"};
   const STANDARD = {rand: 4, ziel: 20, primer: 5};
@@ -114,7 +114,7 @@ const PCR = (() => {
       phasen.push({name, zyklus: zyk, t0, tHalt, t1: t, T: Tz});
     }
     let N = o.N0, M = 0;
-    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0});
+    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0, frei: 1});
     if (prog.start && prog.start.s > 0) fahre("Erste Denaturierung", prog.start.T, prog.start.s, 0);
     for (let n = 1; n <= prog.n; n++){
       fahre("Denaturierung", prog.den.T, prog.den.s, n);
@@ -129,12 +129,12 @@ const PCR = (() => {
       const E = EMAX * a * b * c * frei;
       const Mneu = M * (1 + EMAX * a * c * frei) + N * nb * a * c * frei;   // Nebenprodukte entstehen an falschen Stellen und vermehren sich dann wie das Ziel
       N = N * (1 + E); M = Mneu;
-      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c});
+      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c, frei});
     }
     if (prog.ende && prog.ende.s > 0) fahre("Letzte Elongation", prog.ende.T, prog.ende.s, prog.n);
     if (prog.halt !== undefined && prog.halt !== null) fahre("Kühlen", prog.halt, 0, prog.n);
     return {spur, zyklen, phasen, dauer: t, tmProdukt: tmP, nmax: NMAX};
   }
 
-  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, KOMP};
+  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, EMAX, KOMP};
 })();
