@@ -76,5 +76,31 @@ for (const [oben, opt] of [["ACGT", {}], ["ACGTACGTACGTACGTACGTACGTACGX", {}], [
   pruefe(geworfen, "plan soll bei ungültiger Eingabe einen Fehler werfen: " + oben);
 }
 
+// Thermocycler-Lauf
+const STD = {start: {T: 95, s: 120}, den: {T: 95, s: 30}, anl: {T: 50, s: 30}, ela: {T: 72, s: 60}, n: 30, ende: {T: 72, s: 300}, halt: 4};
+const L = (prog, opt) => R.lauf(Object.assign({}, STD, prog), opt);
+const gut = L({}, {N0: 1000});
+pruefe(gut.zyklen.length === 31, "Lauf: 30 Zyklen plus Start");
+pruefe(gut.zyklen[1].E > 0.85 && gut.zyklen[1].E <= 0.95, "Lauf: gute Ausbeute im ersten Zyklus " + gut.zyklen[1].E);
+pruefe(gut.zyklen[30].N > 1e10 && gut.zyklen[30].N <= 1e12, "Lauf: Plateau zwischen 10^10 und 10^12 " + gut.zyklen[30].N);
+pruefe(gut.zyklen.every((z, i) => !i || z.N >= gut.zyklen[i - 1].N), "Lauf: Menge nimmt nie ab");
+pruefe(gut.zyklen[30].E < 0.5 && L({n: 40}, {N0: 1000}).zyklen[40].E < 0.15, "Lauf: am Ende flacht die Kurve ab");
+pruefe(gut.dauer > 60 * 60 && gut.dauer < 120 * 60, "Lauf: Dauer zwischen 1 und 2 Stunden " + Math.round(gut.dauer / 60) + " min");
+pruefe(gut.spur.every(([, T]) => T >= 4 - 1e-9 && T <= 95 + 1e-9), "Lauf: Temperatur im Bereich des Programms");
+pruefe(gut.zyklen[30].akt > 0.3 && gut.zyklen[30].akt < 0.9, "Lauf: Taq altert, überlebt aber " + gut.zyklen[30].akt);
+const heiss = L({anl: {T: 62, s: 30}}, {N0: 1000, tm: 52});
+pruefe(heiss.zyklen[30].N < 1e4, "Lauf: zu heiße Anlagerung, kaum Produkt");
+const kalt = L({anl: {T: 35, s: 30}}, {N0: 1000, tm: 52});
+pruefe(kalt.zyklen[30].M > 0 && gut.zyklen[30].M === 0, "Lauf: Nebenprodukte nur bei zu kalter Anlagerung");
+const normal = L({}, {N0: 1000, pol: "normal"});
+pruefe(normal.zyklen[30].N < 1001 && normal.zyklen[30].akt < 1e-6, "Lauf: normale Polymerase stirbt bei 95 °C");
+const kurz = L({ela: {T: 72, s: 5}}, {N0: 1000, laenge: 2000});
+pruefe(kurz.zyklen[1].fEla < 0.1, "Lauf: zu kurze Elongation für ein langes Produkt");
+const lau = L({den: {T: 84, s: 30}}, {N0: 1000});
+pruefe(lau.zyklen[1].fDen < 0.2, "Lauf: zu niedrige Denaturierung trennt die Stränge nicht");
+const mehr = L({}, {N0: 100000}), schwelle = l => l.zyklen.findIndex(z => z.N >= 1e10);
+pruefe(schwelle(gut) - schwelle(mehr) >= 6 && schwelle(gut) - schwelle(mehr) <= 8, "Lauf: 100-mal mehr Vorlage, Schwelle etwa 7 Zyklen früher " + schwelle(gut) + " / " + schwelle(mehr));
+pruefe(L({}, {N0: 0}).zyklen[30].N === 0, "Lauf: ohne DNA kein Produkt");
+
 console.log(fehler ? `${fehler} Fehler` : "pcr.js: alle Tests bestanden");
 process.exit(fehler ? 1 : 0);

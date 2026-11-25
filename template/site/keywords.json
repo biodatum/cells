@@ -25,18 +25,23 @@
     "Okazaki-Fragmente",
     "DNA-Polymerase",
     "Ligase",
-    "Replikationsgabel"
+    "Replikationsgabel",
+    "Topoisomerase",
+    "Gyrase",
+    "Superspirale"
   ],
   "pcr.html": [
     "PCR",
     "Primer",
     "Taq-Polymerase",
     "Denaturierung",
+    "Primeranlagerung",
     "Hybridisierung",
-    "Polymerisation",
+    "Elongation",
     "Zyklus",
     "Schmelztemperatur",
-    "Thermocycler"
+    "Thermocycler",
+    "Annealing"
   ],
   "gen-transkription.html": [
     "Gen",

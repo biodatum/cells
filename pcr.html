@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Die PCR: DNA im Thermocycler vervielfältigen</title>
-<meta name="description" content="Sieh drei Zyklen der Polymerase-Kettenreaktion: Denaturierung, Hybridisierung der Primer, Verlängerung durch die Taq-Polymerase. Danach zählt das Zählwerk die Kopien bis 40 Zyklen. Mit Expertenmodus für die Hybridisierungstemperatur.">
+<meta name="description" content="Sieh drei Zyklen der Polymerase-Kettenreaktion: Denaturierung, Primeranlagerung, Elongation durch die Taq-Polymerase. Danach zählt das Zählwerk die Kopien bis 40 Zyklen. Mit Expertenmodus für die Anlagerungstemperatur und Thermocycler-Ansicht.">
 <style>
 :root{
   --bg:#eceff3; --surface:#ffffff; --surface2:#e3e8ee; --ink:#101a2b; --muted:#56637a; --line:#cbd3de;
@@ -127,6 +127,46 @@ details{margin-top:28px;background:var(--surface);border:1px solid var(--line);b
 summary{cursor:pointer;font-weight:700}
 details ul{margin:10px 0 0;padding-left:1.2em}
 details li{margin-bottom:6px}
+
+/* Ansichten */
+.ansicht{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px;border-bottom:1px solid var(--line)}
+.ansicht button{font:inherit;font-weight:700;color:var(--muted);background:none;border:1px solid transparent;border-bottom:0;border-radius:10px 10px 0 0;padding:8px 16px;cursor:pointer;margin-bottom:-1px}
+.ansicht button[aria-selected="true"]{color:var(--ink);background:var(--surface);border-color:var(--line)}
+.ansicht button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Thermocycler */
+.cyc-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));margin-top:12px}
+.programm td,.programm th{padding:4px 8px;text-align:left}
+.programm td:first-child,.programm th:first-child{text-align:left}
+.programm input{font:inherit;width:5.2em;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
+.programm tr.zyk td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.programm .einheit{color:var(--muted);font-size:.88rem;margin-left:4px}
+.probe{display:grid;gap:8px;margin-top:10px}
+.probe label{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;font-weight:600}
+.probe select,.probe input{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.probe input{width:5.2em}
+.geraet{width:100%;height:auto;display:block}
+.geraet text{font-family:var(--sans)}
+.geraet .gehaeuse{fill:var(--surface2);stroke:var(--line);stroke-width:2}
+.geraet .anzeige{fill:#0d1b16;stroke:var(--line)}
+.geraet .lcd{fill:#7ff0b8;font-variant-numeric:tabular-nums}
+.geraet .lcd2{fill:#9fd9c0;font-size:13px}
+.geraet .roehre{fill:color-mix(in srgb,var(--surface) 80%,transparent);stroke:var(--muted);stroke-width:1.5}
+.geraet .beschr{font-size:12px;fill:var(--muted)}
+.kurve text{font-family:var(--sans);font-size:12px;fill:var(--muted)}
+.kurve .achse{stroke:var(--muted);stroke-width:1}
+.kurve .gitter{stroke:var(--line);stroke-width:1}
+.kurve .grau{fill:none;stroke:var(--line);stroke-width:1.6}
+.kurve .temp{fill:none;stroke:var(--c-heiss);stroke-width:1.8}
+.kurve .jetzt{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:3 3}
+.kurve .ziel{fill:none;stroke:var(--accent);stroke-width:2.5}
+.kurve .ideal{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 5}
+.kurve .neben{fill:none;stroke:var(--c-p1);stroke-width:2.2;stroke-dasharray:7 4}
+.kurve .pkt{fill:var(--accent)}
+.diagnose{margin:8px 0 0;padding-left:1.2em}
+.diagnose li{margin-bottom:6px}
+.diagnose li.gut::marker{color:var(--accent)}
+.diagnose li.warn::marker{color:var(--c-heiss)}
 </style>
 <style id="font-css">
 /* Schrift eingebettet (Source Sans 3, Adobe; SIL Open Font License), keine Anfragen an Google */
@@ -318,11 +358,16 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
 <div class="page">
   <header>
     <h1>Die PCR: DNA im Thermocycler vervielfältigen</h1>
-    <p class="lede">Kleinste DNA-Mengen lassen sich im Reagenzglas millionenfach kopieren. Dazu wird ein Gemisch aus DNA, zwei Primern, Nucleotiden und einer hitzestabilen Polymerase immer wieder erhitzt und abgekühlt. Sieh drei Zyklen genau an, dann lass das Zählwerk weiterrechnen.</p>
+    <p class="lede">Kleinste DNA-Mengen lassen sich im Reagenzglas millionenfach kopieren. Dazu wird ein Gemisch aus DNA, zwei Primern, Nukleotiden und einer hitzestabilen Polymerase immer wieder erhitzt und abgekühlt. Sieh drei Zyklen genau an und lass das Zählwerk weiterrechnen, oder starte in der zweiten Ansicht einen ganzen Lauf im Thermocycler.</p>
   </header>
 
+  <div class="ansicht" role="tablist" aria-label="Ansicht wählen">
+    <button type="button" role="tab" id="tabMol" aria-selected="true" aria-controls="s-pcr">Moleküle: drei Zyklen genau</button>
+    <button type="button" role="tab" id="tabCyc" aria-selected="false" aria-controls="s-cycler" tabindex="-1">Im Thermocycler: ein ganzer Lauf</button>
+  </div>
+
   <main>
-    <section id="s-pcr">
+    <section id="s-pcr" role="tabpanel" aria-labelledby="tabMol">
       <div class="steuer" role="group" aria-label="Steuerung">
         <button class="btn" type="button" id="nochmal">Von vorn</button>
         <button class="btn" type="button" id="neu" title="Eine neue zufällige Sequenz würfeln">Neue Sequenz</button>
@@ -341,7 +386,7 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
         <div class="steuer">
           <label class="regler">Primerlänge <input type="range" id="plen" min="16" max="30" step="1" value="20"><output id="plenO">20</output></label>
           <label class="regler">G+C-Anteil <input type="range" id="pgc" min="30" max="70" step="5" value="50"><output id="pgcO">50 %</output></label>
-          <label class="regler">Hybridisierungstemperatur <input type="range" id="pT" min="30" max="72" step="1" value="50"><output id="pTO">50 °C</output></label>
+          <label class="regler">Anlagerungstemperatur <input type="range" id="pT" min="30" max="72" step="1" value="50"><output id="pTO">50 °C</output></label>
         </div>
         <p class="urteil" id="urteil" aria-live="polite"></p>
       </div>
@@ -356,8 +401,8 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
 
       <ol class="phasen" id="phasen" aria-label="Schritte eines PCR-Zyklus">
         <li data-p="1" class="knopf"><button type="button" id="b1" disabled><span class="nr">1</span>Denaturierung</button></li>
-        <li data-p="2" class="knopf"><button type="button" id="b2" disabled><span class="nr">2</span>Hybridisierung</button></li>
-        <li data-p="3" class="knopf"><button type="button" id="b3" disabled><span class="nr">3</span>Polymerisation</button></li>
+        <li data-p="2" class="knopf"><button type="button" id="b2" disabled><span class="nr">2</span>Primeranlagerung</button></li>
+        <li data-p="3" class="knopf"><button type="button" id="b3" disabled><span class="nr">3</span>Elongation</button></li>
       </ol>
       <div class="status" id="status" aria-live="polite"></div>
 
@@ -375,7 +420,7 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
         <ul>
           <li><b>Ausgangs-DNA (Matrize):</b> Enthält die Zielsequenz, aber auch Stücke daneben. Beide Einzelstränge dienen als Vorlage.</li>
           <li><b>Zwei Primer:</b> Kurze, künstlich hergestellte DNA-Stücke. Sie sind komplementär zum Anfang und zum Ende der Zielsequenz und bestimmen, wo die Polymerase beginnt. Darum muss man diese Enden kennen.</li>
-          <li><b>Nucleotide:</b> Die vier DNA-Bausteine (dNTPs), aus denen die neuen Stränge entstehen.</li>
+          <li><b>Nukleotide:</b> Die vier DNA-Bausteine (dNTPs), aus denen die neuen Stränge entstehen.</li>
           <li><b>Taq-Polymerase:</b> Stammt aus dem Bakterium <i>Thermus aquaticus</i>, das in heißen Quellen lebt. Sie baut bei 72 °C an das 3'-Ende der Primer an und übersteht die 95 °C der Denaturierung.</li>
           <li><b>Thermocycler:</b> Stellt die Temperaturen der drei Schritte automatisch ein und wiederholt sie.</li>
         </ul>
@@ -401,20 +446,111 @@ html.eingebettet body > *:not(.eingebettet-hinweis){display:none!important}
         <p class="klein">Lineare Achsen; der Bereich passt sich dem Regler an. Durchgezogen: alle Doppelstränge, gestrichelt: nur die mit reiner Zielsequenz. Beide Linien liegen bald fast aufeinander.</p>
       </div>
     </section>
+    <section id="s-cycler" role="tabpanel" aria-labelledby="tabCyc" hidden>
+      <p class="klein" style="margin-top:10px">Hier läuft eine ganze PCR so ab wie im Gerät. Stelle das Programm ein, wähle die Probe und starte den Lauf. Ein echter Lauf dauert etwa eineinhalb Stunden, hier läuft er schneller.</p>
+      <div class="cyc-grid">
+        <div class="karte" style="margin-top:0">
+          <h3>Programm</h3>
+          <table class="programm">
+            <thead><tr><th>Schritt</th><th>Temperatur</th><th>Zeit</th></tr></thead>
+            <tbody>
+              <tr><td>Erste Denaturierung</td><td><input type="number" id="cStartT" min="85" max="99" step="1" value="95" aria-label="Temperatur der ersten Denaturierung in °C"><span class="einheit">°C</span></td><td><input type="number" id="cStartS" min="0" max="900" step="10" value="120" aria-label="Dauer der ersten Denaturierung in Sekunden"><span class="einheit">s</span></td></tr>
+              <tr class="zyk"><td>1 Denaturierung</td><td><input type="number" id="cDenT" min="70" max="99" step="1" value="95" aria-label="Temperatur der Denaturierung in °C"><span class="einheit">°C</span></td><td><input type="number" id="cDenS" min="1" max="300" step="5" value="30" aria-label="Dauer der Denaturierung in Sekunden"><span class="einheit">s</span></td></tr>
+              <tr class="zyk"><td>2 Primeranlagerung</td><td><input type="number" id="cAnlT" min="30" max="75" step="1" value="55" aria-label="Temperatur der Primeranlagerung in °C"><span class="einheit">°C</span></td><td><input type="number" id="cAnlS" min="1" max="300" step="5" value="30" aria-label="Dauer der Primeranlagerung in Sekunden"><span class="einheit">s</span></td></tr>
+              <tr class="zyk"><td>3 Elongation</td><td><input type="number" id="cElaT" min="40" max="90" step="1" value="72" aria-label="Temperatur der Elongation in °C"><span class="einheit">°C</span></td><td><input type="number" id="cElaS" min="1" max="600" step="5" value="60" aria-label="Dauer der Elongation in Sekunden"><span class="einheit">s</span></td></tr>
+              <tr class="zyk"><td colspan="3">Schritte 1–3 wiederholen: <input type="number" id="cN" min="1" max="50" step="1" value="30" aria-label="Zahl der Zyklen"> Zyklen</td></tr>
+              <tr><td>Letzte Elongation</td><td><input type="number" id="cEndT" min="60" max="80" step="1" value="72" aria-label="Temperatur der letzten Elongation in °C"><span class="einheit">°C</span></td><td><input type="number" id="cEndS" min="0" max="900" step="30" value="300" aria-label="Dauer der letzten Elongation in Sekunden"><span class="einheit">s</span></td></tr>
+              <tr><td>Kühlen bis zur Entnahme</td><td>4<span class="einheit">°C</span></td><td>∞</td></tr>
+            </tbody>
+          </table>
+          <h3 style="margin-top:14px">Probe</h3>
+          <div class="probe">
+            <label>Ausgangsmenge
+              <select id="cN0">
+                <option value="0">keine DNA (Negativkontrolle)</option>
+                <option value="10">10 Kopien (z. B. eine Haarwurzel)</option>
+                <option value="1000" selected>1 000 Kopien</option>
+                <option value="100000">100 000 Kopien</option>
+                <option value="10000000">10 Millionen Kopien</option>
+              </select></label>
+            <label>Länge des Zielabschnitts
+              <select id="cLen">
+                <option value="200">200 Basenpaare</option>
+                <option value="500" selected>500 Basenpaare</option>
+                <option value="1500">1 500 Basenpaare</option>
+                <option value="4000">4 000 Basenpaare</option>
+              </select></label>
+            <label>Schmelztemperatur der Primer
+              <span><input type="number" id="cTm" min="40" max="72" step="1" value="58" aria-label="Schmelztemperatur der Primer in °C"><span class="einheit">°C</span></span></label>
+            <label>Polymerase
+              <select id="cPol">
+                <option value="taq" selected>Taq-Polymerase (hitzestabil)</option>
+                <option value="normal">normale DNA-Polymerase</option>
+              </select></label>
+          </div>
+          <p class="klein">Die Schmelztemperatur der Primer kannst du auf der Seite <a href="schmelztemperatur.html">Schmelztemperatur</a> oder im Expertenmodus der Ansicht „Moleküle“ abschätzen.</p>
+          <p style="margin-top:8px"><button class="btn" type="button" id="cStandard">Standardprogramm wiederherstellen</button></p>
+        </div>
+
+        <div>
+          <svg class="geraet" id="geraet" viewBox="0 0 440 250" role="img" aria-label="Schema eines Thermocyclers: Metallblock mit acht Reaktionsgefäßen, beheizter Deckel und Anzeige"></svg>
+          <div class="steuer" role="group" aria-label="Lauf steuern">
+            <button class="btn" type="button" id="cStart">▶ Start</button>
+            <button class="btn" type="button" id="cEnde">Zum Ende springen</button>
+            <button class="btn" type="button" id="cReset">Zurücksetzen</button>
+            <label class="regler">Tempo
+              <select class="btn" id="cTempo" aria-label="Tempo des Laufs">
+                <option value="1">wie im Gerät (1-fach)</option>
+                <option value="20">20-fach</option>
+                <option value="60" selected>60-fach</option>
+                <option value="200">200-fach</option>
+              </select></label>
+          </div>
+          <div class="status" id="cStatus" aria-live="polite" style="min-height:4.5em"></div>
+        </div>
+      </div>
+
+      <div class="karte">
+        <h3>Temperatur im Block</h3>
+        <label class="schalter"><input type="checkbox" id="cZoom"> nur die letzten 6 Minuten zeigen</label>
+        <svg class="kurve diagramm" id="cKurveT" viewBox="0 0 640 200" role="img" aria-label="Temperatur des Blocks gegen die Zeit"></svg>
+      </div>
+
+      <div class="karte">
+        <h3>Menge der Ziel-DNA nach jedem Zyklus</h3>
+        <label class="schalter"><input type="checkbox" id="cLog" checked> logarithmische Achse (jede Linie: zehnmal mehr)</label>
+        <svg class="kurve diagramm" id="cKurveN" viewBox="0 0 640 240" role="img" aria-label="Zahl der Kopien des Zielabschnitts gegen die Zahl der Zyklen"></svg>
+        <div class="legende">
+          <span><i class="linie" style="background:var(--accent)"></i>Ziel-DNA (Modell)</span>
+          <span><i class="linie" style="background:var(--muted)"></i>ideal: Verdopplung in jedem Zyklus</span>
+          <span><i class="linie" style="background:var(--c-p1)"></i>Nebenprodukte (falsch gebundene Primer)</span>
+        </div>
+        <div class="zaehl" aria-live="polite">
+          <div><small>Zyklus</small><b id="cZyk">0</b></div>
+          <div><small>Kopien der Ziel-DNA</small><b id="cKop">–</b></div>
+          <div><small>Ausbeute im letzten Zyklus</small><b id="cAus">–</b></div>
+        </div>
+        <h3 style="margin-top:14px">Auswertung des Programms</h3>
+        <ul class="diagnose" id="cDiagnose"></ul>
+      </div>
+    </section>
     <p class="weiter">Zurück: <a href="replikation.html">Die Replikation</a> · Mehr zur Temperatur der Primer: <a href="schmelztemperatur.html">Die Schmelztemperatur</a></p>
   </main>
-<!--KEYWORDS--><div class="kwds-end"><p class="kwds-h">Stichwörter</p><ul class="kwds"><li><a href="./#q=PCR" title="Alle Seiten mit PCR suchen">PCR</a></li><li><a href="./#q=Primer" title="Alle Seiten mit Primer suchen">Primer</a></li><li><a href="./#q=Taq-Polymerase" title="Alle Seiten mit Taq-Polymerase suchen">Taq-Polymerase</a></li><li><a href="./#q=Denaturierung" title="Alle Seiten mit Denaturierung suchen">Denaturierung</a></li><li><a href="./#q=Hybridisierung" title="Alle Seiten mit Hybridisierung suchen">Hybridisierung</a></li><li><a href="./#q=Polymerisation" title="Alle Seiten mit Polymerisation suchen">Polymerisation</a></li><li><a href="./#q=Zyklus" title="Alle Seiten mit Zyklus suchen">Zyklus</a></li><li><a href="./#q=Schmelztemperatur" title="Alle Seiten mit Schmelztemperatur suchen">Schmelztemperatur</a></li><li><a href="./#q=Thermocycler" title="Alle Seiten mit Thermocycler suchen">Thermocycler</a></li></ul></div><!--/KEYWORDS-->
+<!--KEYWORDS--><div class="kwds-end"><p class="kwds-h">Stichwörter</p><ul class="kwds"><li><a href="./#q=PCR" title="Alle Seiten mit PCR suchen">PCR</a></li><li><a href="./#q=Primer" title="Alle Seiten mit Primer suchen">Primer</a></li><li><a href="./#q=Taq-Polymerase" title="Alle Seiten mit Taq-Polymerase suchen">Taq-Polymerase</a></li><li><a href="./#q=Denaturierung" title="Alle Seiten mit Denaturierung suchen">Denaturierung</a></li><li><a href="./#q=Primeranlagerung" title="Alle Seiten mit Primeranlagerung suchen">Primeranlagerung</a></li><li><a href="./#q=Hybridisierung" title="Alle Seiten mit Hybridisierung suchen">Hybridisierung</a></li><li><a href="./#q=Elongation" title="Alle Seiten mit Elongation suchen">Elongation</a></li><li><a href="./#q=Zyklus" title="Alle Seiten mit Zyklus suchen">Zyklus</a></li><li><a href="./#q=Schmelztemperatur" title="Alle Seiten mit Schmelztemperatur suchen">Schmelztemperatur</a></li><li><a href="./#q=Thermocycler" title="Alle Seiten mit Thermocycler suchen">Thermocycler</a></li><li><a href="./#q=Annealing" title="Alle Seiten mit Annealing suchen">Annealing</a></li></ul></div><!--/KEYWORDS-->
 
   <details>
     <summary>Modell und Grenzen</summary>
     <ul>
       <li>Die Sequenz ist erfunden und wird bei „Neue Sequenz“ zufällig gewürfelt. Gezeigt sind 28 Basenpaare; davon sind 20 die Zielsequenz. Die Primer sind auf 5 Basen gekürzt, damit sie in die Zeichnung passen, echte Primer haben etwa 18 bis 25 Basen. Echte Zielsequenzen sind meist 100 bis einige tausend Basenpaare lang. Nichts ist maßstäblich.</li>
-      <li>Gezeichnet sind drei Zyklen (am Ende acht Doppelstränge). Das Zählwerk rechnet idealisiert weiter: Jeder Strang wird in jedem Zyklus kopiert, nach n Zyklen gibt es 2<sup>n</sup> Doppelstränge. Davon haben 2<sup>n</sup> − 2n in beiden Strängen genau die Zielsequenz. In einer echten PCR ist die Ausbeute pro Zyklus kleiner als 100 %, und nach etwa 30 bis 40 Zyklen flacht die Kurve ab (Plateau), weil Primer und Nucleotide verbraucht sind, die Polymerase nachlässt und sich Produktstränge wieder miteinander paaren, statt neue Primer anzulagern.</li>
-      <li>Es ist angenommen: Bei 95 °C trennen sich alle Doppelstränge, bei der Hybridisierung findet jeder Primer seine Stelle, und die Polymerase baut jeden Strang bis zum Ende der Vorlage. In Wirklichkeit bricht die Synthese an den langen Vorlagen oft schon früher ab, weil die Zeit des Schritts begrenzt ist. Dass die Stränge mit Randstücken das Zählwerk beeinflussen, ist hier aber genau so gezeichnet wie im Modell.</li>
+      <li>Gezeichnet sind drei Zyklen (am Ende acht Doppelstränge). Das Zählwerk rechnet idealisiert weiter: Jeder Strang wird in jedem Zyklus kopiert, nach n Zyklen gibt es 2<sup>n</sup> Doppelstränge. Davon haben 2<sup>n</sup> − 2n in beiden Strängen genau die Zielsequenz. In einer echten PCR ist die Ausbeute pro Zyklus kleiner als 100 %, und nach etwa 30 bis 40 Zyklen flacht die Kurve ab (Plateau), weil Primer und Nukleotide verbraucht sind, die Polymerase nachlässt und sich Produktstränge wieder miteinander paaren, statt neue Primer anzulagern.</li>
+      <li>Es ist angenommen: Bei 95 °C trennen sich alle Doppelstränge, bei der Primeranlagerung findet jeder Primer seine Stelle, und die Polymerase baut jeden Strang bis zum Ende der Vorlage. In Wirklichkeit bricht die Synthese an den langen Vorlagen oft schon früher ab, weil die Zeit des Schritts begrenzt ist. Dass die Stränge mit Randstücken das Zählwerk beeinflussen, ist hier aber genau so gezeichnet wie im Modell.</li>
       <li>Fehler beim Einbau (Fehlpaarungen der Polymerase) und die Korrekturleseaktivität sind nicht gezeigt. Die Taq-Polymerase hat keine Korrekturleseaktivität, daher entstehen in den Kopien selten Fehler.</li>
-      <li>Hybridisierung: Die gezeichnete Temperatur ist 55 °C, typisch sind 50 bis 65 °C. Im Expertenmodus wird die Schmelztemperatur der Primer mit einer Faustformel (64,9 + 41 · (G+C − 16,4) / N, N = Länge) abgeschätzt und mit der gewählten Temperatur verglichen. „Zu heiß“ (über der Schmelztemperatur): Die Primer lagern sich nicht stabil an, es entsteht nichts Neues. „Zu kalt“ (mehr als 10 °C darunter): In Wirklichkeit lagern sich Primer auch an Stellen an, die nur zum Teil passen, und es entstehen falsche Produkte. Das ist hier nicht gezeichnet. Die Schmelztemperatur rechnet <a href="schmelztemperatur.html">schmelztemperatur.html</a> genauer (Nächste-Nachbarn-Modell).</li>
+      <li>Primeranlagerung (auch Hybridisierung oder Annealing genannt): Die gezeichnete Temperatur ist 55 °C, typisch sind 50 bis 65 °C. Im Expertenmodus wird die Schmelztemperatur der Primer mit einer Faustformel (64,9 + 41 · (G+C − 16,4) / N, N = Länge) abgeschätzt und mit der gewählten Temperatur verglichen. „Zu heiß“ (über der Schmelztemperatur): Die Primer lagern sich nicht stabil an, es entsteht nichts Neues. „Zu kalt“ (mehr als 10 °C darunter): In Wirklichkeit lagern sich Primer auch an Stellen an, die nur zum Teil passen, und es entstehen falsche Produkte. Das ist hier nicht gezeichnet. Die Schmelztemperatur rechnet <a href="schmelztemperatur.html">schmelztemperatur.html</a> genauer (Nächste-Nachbarn-Modell).</li>
       <li>Normale Polymerase: Ein Enzym aus einem Bakterium, das bei Körpertemperatur lebt, wird bei 95 °C zerstört (denaturiert). In der Zeichnung ist angenommen, dass die Polymerase von Anfang an im Gemisch ist und die erste Denaturierung nicht übersteht. Man könnte nach jeder Denaturierung frische Polymerase zugeben; so wurde die PCR ursprünglich gemacht, bevor die Taq-Polymerase verwendet wurde. Das wird hier nicht gezeigt.</li>
       <li>Ein Zyklus dauert im Gerät etwa 1 bis 3 Minuten; die Temperaturen werden nicht sofort erreicht. Die Zeiten und das Aufheizen und Abkühlen in der Seite sind für die Anschauung gewählt.</li>
+      <li>Thermocycler-Ansicht: Die Menge wird mit einer einfachen Formel gerechnet, nicht Molekül für Molekül. In jedem Zyklus wächst die Zahl der Kopien um den Faktor 1 + E. Die Ausbeute E ist höchstens 95 % und sinkt, wenn die Denaturierung zu kalt ist, die Primeranlagerung zu heiß oder die Elongation zu kurz (die Taq-Polymerase baut bei 72 °C etwa 1 000 Basen pro Minute an). Sie sinkt auch, wenn schon sehr viele Kopien da sind: Dann paaren sich die Produktstränge lieber wieder miteinander als mit den Primern, und Primer und Nukleotide werden knapp. So entsteht das Plateau nach etwa 30 Zyklen. Alle Zahlen dieser Formel sind grobe, gerundete Annahmen.</li>
+      <li>Nebenprodukte entstehen im Modell nur, wenn die Primeranlagerung mehr als 10 °C unter der Schmelztemperatur der Primer liegt; sie vermehren sich dann wie das Ziel. In Wirklichkeit gibt es auch Primerdimere und andere Fehlprodukte. Die Taq-Polymerase verliert bei 95 °C langsam an Aktivität (Halbwertszeit im Modell 40 Minuten bei 95 °C und 9 Minuten bei 97,5 °C). Heizen mit 3 °C und Kühlen mit 2 °C pro Sekunde sind typische Werte für Geräte im Schullabor.</li>
+      <li>Die grüne Farbe der Röhrchen zeigt die DNA-Menge, wie sie ein Farbstoff in der Echtzeit-PCR (qPCR) sichtbar macht: erst ab etwa 10<sup>9</sup> Kopien. Ohne Farbstoff sieht man in einem echten Gerät nichts. Die Zahl der Zyklen, bis das Signal erscheint, hängt von der Ausgangsmenge ab: 100-mal mehr DNA erscheint etwa 7 Zyklen früher.</li>
       <li>Die Gelelektrophorese, mit der man die Produkte nach der Länge trennt und sichtbar macht, ist noch nicht auf einer eigenen Seite umgesetzt.</li>
     </ul>
   </details>
@@ -492,6 +628,13 @@ const PALETTE = (() => {
 //   PCR.zahlen(n)             {gesamt, ziel} nach n Zyklen in geschlossener Form: 2^n und 2^n − 2n (ab n = 2, davor 0)
 //   PCR.tm(laenge, gc)        Faustformel für die Schmelztemperatur eines Primers (gc als Anteil 0 … 1)
 //   PCR.bewerte(T, tm)        "heiss" (T > tm), "gut" (tm − 10 ≤ T ≤ tm) oder "kalt" (T < tm − 10)
+//
+// Thermocycler-Lauf (Ansicht „Im Thermocycler“): ein ganzer Lauf wird vorab berechnet, die Seite spielt ihn ab.
+//   PCR.lauf(prog, opt)       prog: {start: {T, s}, den: {T, s}, anl: {T, s}, ela: {T, s}, n, ende: {T, s}, halt}
+//                             opt:  {N0, laenge, tm, pol: "taq" | "normal", heiz, kuehl, dt}
+//        → {spur: [[t, T]], zyklen: [{n, t, N, M, E, akt, fDen, fAnl, fEla}], phasen: [{name, zyklus, t0, t1, T}], dauer, tmProdukt, nmax}
+//        N: Zahl der Zielmoleküle (Doppelstränge), M: Nebenprodukte (nur bei zu kalter Anlagerung), E: Ausbeute des Zyklus (0 … 1),
+//        akt: verbliebene Aktivität der Polymerase (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
 const PCR = (() => {
   const KOMP = {A: "T", T: "A", G: "C", C: "G"};
   const STANDARD = {rand: 4, ziel: 20, primer: 5};
@@ -542,7 +685,62 @@ const PCR = (() => {
   const tm = (laenge, gc) => 64.9 + 41 * (gc * laenge - 16.4) / laenge;
   const bewerte = (T, tmWert) => (T > tmWert ? "heiss" : (T >= tmWert - 10 ? "gut" : "kalt"));
 
-  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, KOMP};
+  /* ---------- Thermocycler-Lauf ---------- */
+  const NMAX = 1e12;                 // Obergrenze der Kopien (Primer und Nukleotide reichen in 25 µl für etwa so viele Produkte)
+  const EMAX = 0.95;
+  const KHALB = 2e10;                // bei so vielen Kopien ist die Ausbeute pro Zyklus nur noch halb so groß                 // Ausbeute pro Zyklus unter guten Bedingungen
+  const sig = x => 1 / (1 + Math.exp(x));
+  // Schmelztemperatur des Produkts (Faustformel für lange DNA, 50 mM Na+, 50 % G+C)
+  const tmProdukt = laenge => 81.5 + 16.6 * Math.log10(0.05) + 0.41 * 50 - 675 / laenge;
+  // Halbwertszeit der Polymerase in Sekunden bei der Temperatur T (Taq: etwa 40 min bei 95 °C und 9 min bei 97,5 °C, Lawyer et al. 1993)
+  const halbwert = (pol, T) => pol === "taq" ? (T < 90 ? Infinity : 2400 * Math.pow(2, -(T - 95) / 1.16)) : (T < 45 ? Infinity : 2);
+  // Geschwindigkeit der Polymerase (Basen pro Sekunde): Faustregel 1000 Basen pro Minute bei 72 °C, langsamer bei anderen Temperaturen
+  const tempo = T => 1000 / 60 * Math.exp(-Math.pow((T - 72) / 15, 2));
+  const fDen = (T, s, tmP) => sig((tmP + 8 - T) / 1.5) * Math.min(1, s / 5);   // im PCR-Puffer mit Mg2+ trennen sich lange Stränge erst deutlich über der Faustformel-Tm
+  const fAnl = (T, s, tmPr) => sig((T - (tmPr + 3)) / 1) * Math.min(1, s / 10);   // bis etwa Tm binden fast alle Primer, darüber kaum noch
+  const neben = (T, tmPr) => T < tmPr - 10 ? 2e-4 * Math.min(1, (tmPr - 10 - T) / 10) : 0;
+
+  function lauf(prog, opt){
+    const o = Object.assign({N0: 1000, laenge: 500, tm: 52, pol: "taq", heiz: 3, kuehl: 2, dt: 1}, opt || {});
+    const tmP = tmProdukt(o.laenge);
+    const spur = [], phasen = [], zyklen = [];
+    let t = 0, T = 25, akt = 1;
+    spur.push([0, T]);
+    function fahre(name, Tz, s, zyk){        // Rampe zur Zieltemperatur, dann halten; Enzym altert unterwegs
+      const t0 = t;
+      while (Math.abs(T - Tz) > 1e-9){
+        const r = Tz > T ? o.heiz : -o.kuehl, schritt = Math.min(o.dt, Math.abs((Tz - T) / r));
+        T += r * schritt; t += schritt; if (Math.abs(T - Tz) < 1e-9) T = Tz;
+        akt *= Math.pow(0.5, schritt / halbwert(o.pol, T)); spur.push([t, T]);
+      }
+      const tHalt = t;
+      for (let r = s; r > 1e-9; r -= o.dt){ const sch = Math.min(o.dt, r); t += sch; akt *= Math.pow(0.5, sch / halbwert(o.pol, T)); spur.push([t, T]); }
+      phasen.push({name, zyklus: zyk, t0, tHalt, t1: t, T: Tz});
+    }
+    let N = o.N0, M = 0;
+    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0});
+    if (prog.start && prog.start.s > 0) fahre("Erste Denaturierung", prog.start.T, prog.start.s, 0);
+    for (let n = 1; n <= prog.n; n++){
+      fahre("Denaturierung", prog.den.T, prog.den.s, n);
+      const a = fDen(prog.den.T, prog.den.s, tmP);
+      fahre("Primeranlagerung", prog.anl.T, prog.anl.s, n);
+      const b = fAnl(prog.anl.T, prog.anl.s, o.tm), nb = neben(prog.anl.T, o.tm);
+      const akt0 = akt;
+      fahre("Elongation", prog.ela.T, prog.ela.s, n);
+      const aktM = (akt0 + akt) / 2;
+      const c = Math.min(1, prog.ela.s * tempo(prog.ela.T) * aktM / o.laenge);
+      const frei = Math.max(0, 1 - (N + M) / NMAX) / (1 + (N + M) / KHALB);   // viele Produkte: die Stränge paaren sich lieber wieder miteinander als mit den Primern
+      const E = EMAX * a * b * c * frei;
+      const Mneu = M * (1 + EMAX * a * c * frei) + N * nb * a * c * frei;   // Nebenprodukte entstehen an falschen Stellen und vermehren sich dann wie das Ziel
+      N = N * (1 + E); M = Mneu;
+      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c});
+    }
+    if (prog.ende && prog.ende.s > 0) fahre("Letzte Elongation", prog.ende.T, prog.ende.s, prog.n);
+    if (prog.halt !== undefined && prog.halt !== null) fahre("Kühlen", prog.halt, 0, prog.n);
+    return {spur, zyklen, phasen, dauer: t, tmProdukt: tmP, nmax: NMAX};
+  }
+
+  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, KOMP};
 })();
 /*__/PCR__*/
 </script>
@@ -640,10 +838,10 @@ function aufbauen(neueSequenz){
 const TEXTE = {
   leer: "Die Ausgangs-DNA ist ein Doppelstrang. Die farbig hinterlegte Zielsequenz soll vervielfältigt werden, rechts und links davon liegen Stücke, die nicht zum Ziel gehören. Drücke auf „1 Denaturierung“.",
   denat: "Denaturierung (95 °C): Die Hitze bricht die Wasserstoffbrücken zwischen den Basenpaaren, die Doppelstränge fallen in zwei Einzelstränge auseinander. Jeder Einzelstrang dient im nächsten Schritt als Vorlage.",
-  hyb: "Hybridisierung (bei niedrigerer Temperatur): Die beiden Primer lagern sich an ihre komplementären Stellen an. Primer 1 (orange) paart sich mit dem Anfang der Zielsequenz, Primer 2 (türkis) mit ihrem Ende. Primer sind kurze DNA-Stücke, sie bringen das 3'-Ende mit, an dem die Polymerase beginnen kann.",
+  hyb: "Primeranlagerung (bei niedrigerer Temperatur, etwa 40–60 °C): Die beiden Primer lagern sich an ihre komplementären Stellen an. Primer 1 (orange) paart sich mit dem Anfang der Zielsequenz, Primer 2 (türkis) mit ihrem Ende. Primer sind kurze DNA-Stücke, sie bringen das 3'-Ende mit, an dem die Polymerase beginnen kann.",
   hybHeiss: "Zu heiß: Die Temperatur liegt über der Schmelztemperatur der Primer. Sie finden keinen stabilen Halt und lösen sich sofort wieder. Ohne Primer kann die Polymerase nicht beginnen.",
   hybKalt: "Zu kalt: Hier binden die Primer wie gewünscht. In Wirklichkeit würden sie sich bei dieser Temperatur auch an Stellen anlagern, die nur zum Teil passen, und falsche Produkte würden entstehen. Das zeigt die Seite nicht.",
-  pol: "Polymerisation (72 °C): Die Taq-Polymerase (gelber Pfeil) hängt am 3'-Ende jedes Primers komplementäre Nucleotide an (5'→3'), bis das Ende der Vorlage erreicht ist. Aus jedem Einzelstrang ist wieder ein Doppelstrang geworden.",
+  pol: "Elongation (72 °C): Die Taq-Polymerase (gelber Pfeil) hängt am 3'-Ende jedes Primers komplementäre Nukleotide an (5'→3'), bis das Ende der Vorlage erreicht ist. Aus jedem Einzelstrang ist wieder ein Doppelstrang geworden.",
   polNormal: "Die normale DNA-Polymerase hat die 95 °C der Denaturierung nicht überstanden: Das Enzym ist denaturiert und baut nichts an (rotes Kreuz). Es entsteht nichts Neues.",
   nichts: "In diesem Zyklus ist nichts Neues entstanden: Die Einzelstränge haben sich wieder zu den alten Doppelsträngen gepaart.",
   zyklusEnde: n => `Zyklus ${n} ist fertig. Im Zählwerk unten steht, wie viele Doppelstränge es jetzt sind und wie viele davon nur die Zielsequenz enthalten. Klicke auf „1 Denaturierung“ für den nächsten Zyklus.`,
@@ -717,7 +915,7 @@ $("b1").addEventListener("click", () => {
   }, () => { gTick.replaceChildren(); schritt = 2; zyklusText(); });
 });
 
-/* ---------- Schritt 2: Hybridisierung ---------- */
+/* ---------- Schritt 2: Primeranlagerung ---------- */
 $("b2").addEventListener("click", () => {
   if (schritt !== 2 || anim) return;
   const h = hybParameter(); setTemp(h.T); zustand.bindet = h.urteil !== "heiss";
@@ -746,7 +944,7 @@ $("b2").addEventListener("click", () => {
   });
 });
 
-/* ---------- Schritt 3: Polymerisation ---------- */
+/* ---------- Schritt 3: Elongation ---------- */
 $("b3").addEventListener("click", () => {
   if (schritt !== 3 || anim) return;
   const taq = $("pol").value === "taq";
@@ -861,6 +1059,273 @@ new MutationObserver(alleFarben).observe(document.documentElement, {attributes: 
 
 zeigeUrteil();
 aufbauen(true);
+})();
+</script>
+<script>
+/* ---------- Ansicht „Im Thermocycler“ ---------- */
+(() => {
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const de = (x, d) => x.toLocaleString("de-DE", {maximumFractionDigits: d || 0});
+const mmss = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function kopien(x){
+  if (x < 1e6) return de(Math.round(x));
+  const e = Math.floor(Math.log10(x)), m = x / Math.pow(10, e);
+  return de(m, 1) + " · 10" + String(e).replace(/./g, c => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]);
+}
+
+/* Ansicht wählen */
+const tabs = [["tabMol", "s-pcr"], ["tabCyc", "s-cycler"]];
+function zeige(id){
+  tabs.forEach(([t, s]) => { const an = t === id; $(t).setAttribute("aria-selected", String(an)); $(t).tabIndex = an ? 0 : -1; $(s).hidden = !an; });
+  if (id === "tabCyc"){ history.replaceState(null, "", "#thermocycler"); zeichneAlles(); }
+  else history.replaceState(null, "", location.pathname + location.search);
+}
+tabs.forEach(([t], i) => {
+  $(t).addEventListener("click", () => zeige(t));
+  $(t).addEventListener("keydown", e => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const n = tabs[(i + 1) % 2][0]; zeige(n); $(n).focus(); e.preventDefault();
+  });
+});
+
+/* Programm lesen */
+const STANDARD = {cStartT: 95, cStartS: 120, cDenT: 95, cDenS: 30, cAnlT: 55, cAnlS: 30, cElaT: 72, cElaS: 60, cN: 30, cEndT: 72, cEndS: 300, cN0: "1000", cLen: "500", cTm: 58, cPol: "taq"};
+const FELDER = Object.keys(STANDARD);
+function wert(id){
+  const e = $(id);
+  if (e.tagName === "SELECT") return e.value;
+  let v = parseFloat(String(e.value).replace(",", "."));
+  if (!isFinite(v)) v = STANDARD[id];
+  v = clamp(v, +e.min, +e.max); if (id === "cN") v = Math.round(v);
+  e.value = v; return v;
+}
+function programm(){
+  const w = {}; FELDER.forEach(id => w[id] = wert(id));
+  return {
+    prog: {start: {T: w.cStartT, s: w.cStartS}, den: {T: w.cDenT, s: w.cDenS}, anl: {T: w.cAnlT, s: w.cAnlS}, ela: {T: w.cElaT, s: w.cElaS}, n: w.cN, ende: {T: w.cEndT, s: w.cEndS}, halt: 4},
+    opt: {N0: +w.cN0, laenge: +w.cLen, tm: w.cTm, pol: w.cPol}
+  };
+}
+
+/* Zustand */
+let L, P, t = 0, laeuft = false, raf = 0, letzte = 0;
+function rechne(){ P = programm(); L = PCR.lauf(P.prog, P.opt); t = 0; diagnose(); }
+function temperatur(tt){
+  const s = L.spur; if (tt <= 0) return s[0][1]; if (tt >= L.dauer) return s[s.length - 1][1];
+  let a = 0, b = s.length - 1;
+  while (b - a > 1){ const m = (a + b) >> 1; if (s[m][0] <= tt) a = m; else b = m; }
+  const [t0, T0] = s[a], [t1, T1] = s[b];
+  return t1 > t0 ? T0 + (T1 - T0) * (tt - t0) / (t1 - t0) : T1;
+}
+function phase(tt){
+  for (const ph of L.phasen) if (tt < ph.t1 || (ph.name === "Kühlen" && tt >= ph.t0)) return ph;
+  return L.phasen[L.phasen.length - 1];
+}
+function fertigeZyklen(tt){ let k = 0; for (const z of L.zyklen) if (z.n > 0 && z.t <= tt + 1e-6) k = z.n; return k; }
+
+/* Farbe des Blocks: kalt blau, warm gelb, heiß rot */
+function tempFarbe(T){
+  const st = [[4, [61, 111, 214]], [55, [233, 196, 106]], [95, [209, 73, 91]]];
+  const x = clamp(T, 4, 95); let i = x <= 55 ? 0 : 1; const [a, ca] = st[i], [b, cb] = st[i + 1], f = (x - a) / (b - a);
+  return "rgb(" + ca.map((c, j) => Math.round(c + (cb[j] - c) * f)).join(",") + ")";
+}
+
+/* Gerät */
+let gBlock, gDeckel, gDeckelT, gLcdT, gLcd1, gLcd2, gLcd3, gFluess = [];
+function baueGeraet(){
+  const g = $("geraet"); g.replaceChildren();
+  el("rect", {class: "gehaeuse", x: 6, y: 6, width: 428, height: 238, rx: 16}, g);
+  gDeckel = el("rect", {x: 26, y: 26, width: 250, height: 30, rx: 6, fill: "#c9cfd8", stroke: "var(--muted)"}, g);
+  gDeckelT = el("text", {class: "beschr", x: 151, y: 46, "text-anchor": "middle", style: "fill:#1b2330"}, g);
+  for (let i = 0; i < 8; i++){
+    const x = 38 + i * 29;
+    el("path", {class: "roehre", d: `M${x} 62 h20 v52 q0 22 -10 30 q-10 -8 -10 -30 z`}, g);
+    gFluess.push(el("path", {d: `M${x + 2} 98 h16 v16 q0 18 -8 25 q-8 -7 -8 -25 z`, fill: "var(--accent)", "fill-opacity": 0.1}, g));
+  }
+  gBlock = el("rect", {x: 26, y: 112, width: 250, height: 70, rx: 6, stroke: "var(--muted)"}, g);
+  for (let i = 0; i < 8; i++) el("ellipse", {cx: 48 + i * 29, cy: 120, rx: 10, ry: 3.5, fill: "rgba(0,0,0,.25)"}, g);
+  el("text", {class: "beschr", x: 151, y: 200, "text-anchor": "middle"}, g).textContent = "Metallblock (heizt und kühlt)";
+  el("text", {class: "beschr", x: 151, y: 218, "text-anchor": "middle"}, g).textContent = "Grün: Menge der DNA, sichtbar gemacht mit einem Farbstoff";
+  el("rect", {class: "anzeige", x: 292, y: 26, width: 128, height: 120, rx: 8}, g);
+  gLcdT = el("text", {class: "lcd", x: 356, y: 70, "text-anchor": "middle", style: "font:800 30px var(--sans)"}, g);
+  gLcd1 = el("text", {class: "lcd2", x: 356, y: 94, "text-anchor": "middle"}, g);
+  gLcd2 = el("text", {class: "lcd2", x: 356, y: 114, "text-anchor": "middle"}, g);
+  gLcd3 = el("text", {class: "lcd2", x: 356, y: 134, "text-anchor": "middle"}, g);
+  el("text", {class: "beschr", x: 356, y: 166, "text-anchor": "middle"}, g).textContent = "Anzeige";
+}
+function zeigeGeraet(){
+  const T = temperatur(t), ph = phase(t), k = fertigeZyklen(t), z = L.zyklen[k];
+  gBlock.setAttribute("fill", tempFarbe(T));
+  const deckelAn = laeuft || t > 0;
+  gDeckel.setAttribute("fill", deckelAn ? "#e7a3a3" : "#c9cfd8");
+  gDeckelT.textContent = deckelAn ? "beheizter Deckel: 105 °C" : "Deckel (aus)";
+  gLcdT.textContent = de(T) + " °C";
+  if (t <= 0){ gLcd1.textContent = "bereit"; gLcd2.textContent = P.prog.n + " Zyklen"; gLcd3.textContent = "Laufzeit " + mmss(L.dauer); }
+  else {
+    gLcd1.textContent = ph.name === "Kühlen" && t >= L.dauer ? "fertig, kühlen" : ph.name;
+    gLcd2.textContent = ph.zyklus > 0 && ["Denaturierung", "Primeranlagerung", "Elongation"].includes(ph.name) ? `Zyklus ${ph.zyklus} von ${P.prog.n}` : "";
+    gLcd3.textContent = t < L.dauer ? "noch " + mmss(L.dauer - t) : "";
+  }
+  const sicht = clamp((Math.log10(z.N + z.M + 1) - 9) / 3, 0, 1);
+  gFluess.forEach(f => f.setAttribute("fill-opacity", (0.08 + 0.85 * sicht).toFixed(2)));
+}
+
+/* Temperaturkurve */
+let gTemp, gClip, gJetzt;
+const KT = {L: 44, R: 14, T: 12, B: 32, W: 640, H: 200};
+function zeichneTemp(){
+  const d = $("cKurveT"); d.replaceChildren();
+  const {L: l, R, T: tp, B, W, H} = KT, pw = W - l - R, ph = H - tp - B;
+  const zoom = $("cZoom").checked, fenster = 360;
+  const t0 = zoom ? clamp(t - fenster * 0.8, 0, Math.max(0, L.dauer - fenster)) : 0, t1 = zoom ? t0 + fenster : L.dauer;
+  const X = s => l + (s - t0) / (t1 - t0) * pw, Y = T => tp + ph - T / 100 * ph;
+  for (const T of [0, 25, 50, 75, 100]){
+    el("line", {class: "gitter", x1: l, x2: W - R, y1: Y(T), y2: Y(T)}, d);
+    el("text", {x: l - 6, y: Y(T) + 4, "text-anchor": "end"}, d).textContent = T;
+  }
+  const schritt = (t1 - t0) > 3600 ? 900 : (t1 - t0) > 1200 ? 300 : 60;
+  for (let s = Math.ceil(t0 / schritt) * schritt; s <= t1 + 1e-6; s += schritt){
+    el("line", {class: "achse", x1: X(s), x2: X(s), y1: tp + ph, y2: tp + ph + 4}, d);
+    el("text", {x: X(s), y: tp + ph + 17, "text-anchor": "middle"}, d).textContent = Math.round(s / 60);
+  }
+  el("line", {class: "achse", x1: l, x2: W - R, y1: tp + ph, y2: tp + ph}, d);
+  el("text", {x: l + pw / 2, y: H - 3, "text-anchor": "middle"}, d).textContent = "Zeit in Minuten";
+  el("text", {x: 4, y: tp + 4}, d).textContent = "°C";
+  const id = "cClip" + Math.random().toString(36).slice(2, 7);
+  const cp = el("clipPath", {id}, el("defs", {}, d));
+  gClip = el("rect", {x: l, y: 0, width: 0, height: H}, cp);
+  const bereich = el("clipPath", {id: id + "b"}, d.querySelector("defs"));
+  el("rect", {x: l, y: 0, width: pw, height: H}, bereich);
+  let pfad = "";
+  for (const [s, T] of L.spur){ if (s < t0 - 5 || s > t1 + 5) continue; pfad += (pfad ? "L" : "M") + X(s).toFixed(1) + " " + Y(T).toFixed(1); }
+  const gb = el("g", {"clip-path": `url(#${id}b)`}, d);
+  el("path", {class: "grau", d: pfad}, gb);
+  gTemp = el("path", {class: "temp", d: pfad, "clip-path": `url(#${id})`}, gb);
+  gJetzt = el("line", {class: "jetzt", y1: tp, y2: tp + ph}, d);
+  KT.X = X; KT.t0 = t0; KT.t1 = t1;
+}
+function zeigeTemp(){
+  if ($("cZoom").checked && (t > KT.t1 - 20 || t < KT.t0)) zeichneTemp();
+  const x = clamp(KT.X(t), KT.L, KT.W - KT.R);
+  gClip.setAttribute("width", Math.max(0, x - KT.L)); gJetzt.setAttribute("x1", x); gJetzt.setAttribute("x2", x);
+}
+
+/* Mengenkurve */
+let gezeigtK = -1;
+function zeichneMenge(){
+  const k = fertigeZyklen(t); gezeigtK = k;
+  const d = $("cKurveN"); d.replaceChildren();
+  const l = 66, R = 14, tp = 12, B = 34, W = 640, H = 240, pw = W - l - R, ph = H - tp - B;
+  const n = P.prog.n, log = $("cLog").checked, Z = L.zyklen, N0 = P.opt.N0;
+  const X = i => l + i / n * pw;
+  let Y;
+  if (log){
+    const lo = Math.max(0, Math.floor(Math.log10(Math.max(1, N0 || 1)))), hi = 13;
+    Y = v => tp + ph - clamp((Math.log10(Math.max(v, Math.pow(10, lo))) - lo) / (hi - lo), 0, 1) * ph;
+    for (let e = lo; e <= hi; e++){
+      el("line", {class: "gitter", x1: l, x2: W - R, y1: Y(Math.pow(10, e)), y2: Y(Math.pow(10, e))}, d);
+      if ((e - lo) % (hi - lo > 8 ? 2 : 1) === 0) el("text", {x: l - 6, y: Y(Math.pow(10, e)) + 4, "text-anchor": "end"}, d).textContent = e === 0 ? "1" : e < 4 ? de(Math.pow(10, e)) : "10" + String(e).replace(/./g, c => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]);
+    }
+  } else {
+    const ym = Math.max(1, ...Z.map(z => Math.max(z.N, z.M))) * 1.05, e = Math.floor(Math.log10(ym)), stufe = Math.pow(10, e) * (ym / Math.pow(10, e) > 5 ? 2 : ym / Math.pow(10, e) > 2 ? 1 : 0.5);
+    Y = v => tp + ph - clamp(v / ym, 0, 1) * ph;
+    for (let v = 0; v <= ym; v += stufe){
+      el("line", {class: "gitter", x1: l, x2: W - R, y1: Y(v), y2: Y(v)}, d);
+      el("text", {x: l - 6, y: Y(v) + 4, "text-anchor": "end"}, d).textContent = v === 0 ? "0" : kopien(v);
+    }
+  }
+  const sch = Math.ceil(n / 10);
+  for (let i = 0; i <= n; i += sch){
+    el("line", {class: "achse", x1: X(i), x2: X(i), y1: tp + ph, y2: tp + ph + 4}, d);
+    el("text", {x: X(i), y: tp + ph + 18, "text-anchor": "middle"}, d).textContent = i;
+  }
+  el("line", {class: "achse", x1: l, x2: W - R, y1: tp + ph, y2: tp + ph}, d);
+  el("text", {x: l + pw / 2, y: H - 4, "text-anchor": "middle"}, d).textContent = "Zahl der Zyklen";
+  const pfad = (f, bis) => { let s = ""; for (let i = 0; i <= bis; i++){ const v = f(i); if (log && v < Math.max(1, N0)) continue; s += (s ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); } return s; };
+  if (log && N0 > 0) el("path", {class: "ideal", d: pfad(i => Math.min(N0 * Math.pow(2, i), 1e13), n)}, d);
+  if (Z[n].M > 0) el("path", {class: "neben", d: pfad(i => Z[i].M, k)}, d);
+  el("path", {class: "ziel", d: pfad(i => Z[i].N, k)}, d);
+  if (Z[k].N > 0 || !log) el("circle", {class: "pkt", cx: X(k), cy: Y(Z[k].N), r: 5}, d);
+  $("cZyk").textContent = k + " von " + n;
+  $("cKop").textContent = kopien(Z[k].N) + (N0 > 0 && k > 0 ? ` (${kopien(Z[k].N / N0)}-fach)` : "");
+  $("cAus").textContent = k > 0 ? de(Z[k].E * 100) + " %" : "–";
+}
+
+/* Auswertung: was am Programm gut ist und was nicht */
+function diagnose(){
+  const u = $("cDiagnose"); u.replaceChildren();
+  const Z = L.zyklen, z1 = Z[1], zn = Z[P.prog.n], pr = P.prog, o = P.opt, gute = [];
+  const punkt = (klasse, text) => { const li = document.createElement("li"); li.className = klasse; li.textContent = text; u.appendChild(li); };
+  if (o.N0 === 0) punkt("gut", "Negativkontrolle: Ohne Ausgangs-DNA entsteht kein Produkt. So prüft man, dass keine fremde DNA in das Gemisch gelangt ist.");
+  if (o.pol === "normal") punkt("warn", "Die normale DNA-Polymerase ist schon bei der ersten Denaturierung zerstört worden (denaturiert). Danach wird nichts mehr kopiert.");
+  if (z1.fDen < 0.9) punkt("warn", `Denaturierung bei ${pr.den.T} °C: Die Doppelstränge trennen sich nur zum Teil (Modell: ${de(z1.fDen * 100)} %). Nur getrennte Stränge können als Vorlage dienen.`);
+  else gute.push("Die Doppelstränge trennen sich bei der Denaturierung");
+  if (z1.fAnl < 0.9) punkt("warn", `Primeranlagerung bei ${pr.anl.T} °C liegt zu nah an oder über der Schmelztemperatur der Primer (${o.tm} °C). Viele Primer bleiben nicht gebunden (Modell: ${de(z1.fAnl * 100)} % binden).`);
+  else if (pr.anl.T < o.tm - 10) punkt("warn", `Primeranlagerung bei ${pr.anl.T} °C ist mehr als 10 °C unter der Schmelztemperatur der Primer (${o.tm} °C). Die Primer binden dann auch an Stellen, die nur zum Teil passen: Es entstehen Nebenprodukte (gestrichelte orange Linie).`);
+  else gute.push("die Primer binden passend");
+  if (o.pol === "taq"){
+    if (z1.fEla < 0.9) punkt("warn", `Elongation zu kurz oder bei ungünstiger Temperatur: Die Taq-Polymerase baut bei 72 °C etwa 1 000 Basen pro Minute an. Für ${de(o.laenge)} Basenpaare in ${pr.ela.s} s bei ${pr.ela.T} °C wird nur ein Teil der Stränge fertig (Modell: ${de(z1.fEla * 100)} %).`);
+    else gute.push("die Elongation reicht für die Länge des Zielabschnitts");
+    if (zn.akt < 0.5) punkt("warn", `Die Taq-Polymerase ist hitzestabil, aber nicht unbegrenzt: Nach dem Lauf hat sie nur noch ${de(zn.akt * 100)} % ihrer Aktivität. Lange oder sehr heiße Denaturierungen schaden ihr.`);
+  }
+  if (pr.n > 40) punkt("warn", "Mehr als 40 Zyklen bringen kaum mehr Produkt (Plateau), aber mehr Nebenprodukte und Fehler.");
+  if (gute.length === 3 && o.pol === "taq" && o.N0 > 0) punkt("gut", "Gutes Programm: " + gute.join(", ") + ".");
+  if (o.N0 > 0 && zn.N > 0) punkt("gut", `Am Ende sind etwa ${kopien(zn.N)} Kopien da, ${kopien(zn.N / o.N0)}-mal so viele wie am Anfang. Bei Verdopplung in jedem Zyklus wären es ${kopien(Math.min(o.N0 * Math.pow(2, pr.n), 1e30))}.`);
+}
+
+/* Ablauf */
+function statusText(){
+  const T = temperatur(t), ph = phase(t);
+  let s;
+  if (t <= 0) s = "Bereit. Starte den Lauf oder ändere das Programm. Der Deckel wird beheizt, damit kein Wasser verdunstet und sich oben am Deckel niederschlägt.";
+  else if (t >= L.dauer) s = "Der Lauf ist fertig. Der Block hält die Proben bei 4 °C, bis man sie herausnimmt. Unten steht die Auswertung.";
+  else {
+    const rampe = t < ph.tHalt;
+    const was = {
+      "Erste Denaturierung": "Erste Denaturierung: Die lange Ausgangs-DNA wird gründlich in Einzelstränge getrennt.",
+      "Denaturierung": "Denaturierung: Die Hitze trennt die Doppelstränge in Einzelstränge.",
+      "Primeranlagerung": "Primeranlagerung: Die Primer lagern sich an ihre komplementären Stellen an.",
+      "Elongation": "Elongation: Die Polymerase verlängert die Primer an ihrem 3'-Ende.",
+      "Letzte Elongation": "Letzte Elongation: Noch unvollständige Stränge werden fertig gebaut.",
+      "Kühlen": "Abkühlen auf 4 °C."
+    }[ph.name];
+    s = (rampe ? `Der Block ${temperatur(t + 0.5) > T ? "heizt" : "kühlt"} auf ${ph.T} °C. ` : "") + was;
+  }
+  $("cStatus").textContent = s;
+}
+function zeigeAlles(){
+  sperre(laeuft || (t > 0 && t < L.dauer));
+  zeigeGeraet(); zeigeTemp(); statusText();
+  if (fertigeZyklen(t) !== gezeigtK) zeichneMenge();
+  $("cStart").textContent = laeuft ? "⏸ Pause" : t > 0 && t < L.dauer ? "▶ Weiter" : "▶ Start";
+}
+function zeichneAlles(){ zeichneTemp(); zeichneMenge(); zeigeAlles(); }
+function sperre(an){ FELDER.forEach(id => $(id).disabled = an); $("cStandard").disabled = an; }
+function schritt(jetzt){
+  const dt = Math.min(0.1, (jetzt - letzte) / 1000); letzte = jetzt;
+  t = Math.min(L.dauer, t + dt * +$("cTempo").value);
+  if (t >= L.dauer){ laeuft = false; }
+  zeigeAlles();
+  if (laeuft) raf = requestAnimationFrame(schritt);
+}
+$("cStart").addEventListener("click", () => {
+  if (laeuft){ laeuft = false; cancelAnimationFrame(raf); zeigeAlles(); return; }
+  if (t >= L.dauer){ t = 0; gezeigtK = -1; }
+  laeuft = true; letzte = performance.now(); raf = requestAnimationFrame(schritt);
+});
+$("cEnde").addEventListener("click", () => { laeuft = false; cancelAnimationFrame(raf); t = L.dauer; zeichneAlles(); });
+$("cReset").addEventListener("click", () => { laeuft = false; cancelAnimationFrame(raf); t = 0; gezeigtK = -1; zeichneAlles(); });
+$("cStandard").addEventListener("click", () => { FELDER.forEach(id => $(id).value = STANDARD[id]); rechne(); zeichneAlles(); });
+FELDER.forEach(id => $(id).addEventListener("change", () => { if (laeuft) return; rechne(); gezeigtK = -1; zeichneAlles(); }));
+$("cZoom").addEventListener("change", () => { zeichneTemp(); zeigeAlles(); });
+$("cLog").addEventListener("change", zeichneMenge);
+
+baueGeraet(); rechne();
+if (location.hash === "#thermocycler") zeige("tabCyc"); else zeichneAlles();
 })();
 </script>
 </body>

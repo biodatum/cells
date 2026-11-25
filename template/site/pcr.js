@@ -24,6 +24,13 @@
 //   PCR.zahlen(n)             {gesamt, ziel} nach n Zyklen in geschlossener Form: 2^n und 2^n − 2n (ab n = 2, davor 0)
 //   PCR.tm(laenge, gc)        Faustformel für die Schmelztemperatur eines Primers (gc als Anteil 0 … 1)
 //   PCR.bewerte(T, tm)        "heiss" (T > tm), "gut" (tm − 10 ≤ T ≤ tm) oder "kalt" (T < tm − 10)
+//
+// Thermocycler-Lauf (Ansicht „Im Thermocycler“): ein ganzer Lauf wird vorab berechnet, die Seite spielt ihn ab.
+//   PCR.lauf(prog, opt)       prog: {start: {T, s}, den: {T, s}, anl: {T, s}, ela: {T, s}, n, ende: {T, s}, halt}
+//                             opt:  {N0, laenge, tm, pol: "taq" | "normal", heiz, kuehl, dt}
+//        → {spur: [[t, T]], zyklen: [{n, t, N, M, E, akt, fDen, fAnl, fEla}], phasen: [{name, zyklus, t0, t1, T}], dauer, tmProdukt, nmax}
+//        N: Zahl der Zielmoleküle (Doppelstränge), M: Nebenprodukte (nur bei zu kalter Anlagerung), E: Ausbeute des Zyklus (0 … 1),
+//        akt: verbliebene Aktivität der Polymerase (0 … 1). Modellannahmen stehen in pcr.html unter „Modell und Grenzen“.
 const PCR = (() => {
   const KOMP = {A: "T", T: "A", G: "C", C: "G"};
   const STANDARD = {rand: 4, ziel: 20, primer: 5};
@@ -74,5 +81,60 @@ const PCR = (() => {
   const tm = (laenge, gc) => 64.9 + 41 * (gc * laenge - 16.4) / laenge;
   const bewerte = (T, tmWert) => (T > tmWert ? "heiss" : (T >= tmWert - 10 ? "gut" : "kalt"));
 
-  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, KOMP};
+  /* ---------- Thermocycler-Lauf ---------- */
+  const NMAX = 1e12;                 // Obergrenze der Kopien (Primer und Nukleotide reichen in 25 µl für etwa so viele Produkte)
+  const EMAX = 0.95;
+  const KHALB = 2e10;                // bei so vielen Kopien ist die Ausbeute pro Zyklus nur noch halb so groß                 // Ausbeute pro Zyklus unter guten Bedingungen
+  const sig = x => 1 / (1 + Math.exp(x));
+  // Schmelztemperatur des Produkts (Faustformel für lange DNA, 50 mM Na+, 50 % G+C)
+  const tmProdukt = laenge => 81.5 + 16.6 * Math.log10(0.05) + 0.41 * 50 - 675 / laenge;
+  // Halbwertszeit der Polymerase in Sekunden bei der Temperatur T (Taq: etwa 40 min bei 95 °C und 9 min bei 97,5 °C, Lawyer et al. 1993)
+  const halbwert = (pol, T) => pol === "taq" ? (T < 90 ? Infinity : 2400 * Math.pow(2, -(T - 95) / 1.16)) : (T < 45 ? Infinity : 2);
+  // Geschwindigkeit der Polymerase (Basen pro Sekunde): Faustregel 1000 Basen pro Minute bei 72 °C, langsamer bei anderen Temperaturen
+  const tempo = T => 1000 / 60 * Math.exp(-Math.pow((T - 72) / 15, 2));
+  const fDen = (T, s, tmP) => sig((tmP + 8 - T) / 1.5) * Math.min(1, s / 5);   // im PCR-Puffer mit Mg2+ trennen sich lange Stränge erst deutlich über der Faustformel-Tm
+  const fAnl = (T, s, tmPr) => sig((T - (tmPr + 3)) / 1) * Math.min(1, s / 10);   // bis etwa Tm binden fast alle Primer, darüber kaum noch
+  const neben = (T, tmPr) => T < tmPr - 10 ? 2e-4 * Math.min(1, (tmPr - 10 - T) / 10) : 0;
+
+  function lauf(prog, opt){
+    const o = Object.assign({N0: 1000, laenge: 500, tm: 52, pol: "taq", heiz: 3, kuehl: 2, dt: 1}, opt || {});
+    const tmP = tmProdukt(o.laenge);
+    const spur = [], phasen = [], zyklen = [];
+    let t = 0, T = 25, akt = 1;
+    spur.push([0, T]);
+    function fahre(name, Tz, s, zyk){        // Rampe zur Zieltemperatur, dann halten; Enzym altert unterwegs
+      const t0 = t;
+      while (Math.abs(T - Tz) > 1e-9){
+        const r = Tz > T ? o.heiz : -o.kuehl, schritt = Math.min(o.dt, Math.abs((Tz - T) / r));
+        T += r * schritt; t += schritt; if (Math.abs(T - Tz) < 1e-9) T = Tz;
+        akt *= Math.pow(0.5, schritt / halbwert(o.pol, T)); spur.push([t, T]);
+      }
+      const tHalt = t;
+      for (let r = s; r > 1e-9; r -= o.dt){ const sch = Math.min(o.dt, r); t += sch; akt *= Math.pow(0.5, sch / halbwert(o.pol, T)); spur.push([t, T]); }
+      phasen.push({name, zyklus: zyk, t0, tHalt, t1: t, T: Tz});
+    }
+    let N = o.N0, M = 0;
+    zyklen.push({n: 0, t: 0, N, M, E: 0, akt: 1, fDen: 0, fAnl: 0, fEla: 0});
+    if (prog.start && prog.start.s > 0) fahre("Erste Denaturierung", prog.start.T, prog.start.s, 0);
+    for (let n = 1; n <= prog.n; n++){
+      fahre("Denaturierung", prog.den.T, prog.den.s, n);
+      const a = fDen(prog.den.T, prog.den.s, tmP);
+      fahre("Primeranlagerung", prog.anl.T, prog.anl.s, n);
+      const b = fAnl(prog.anl.T, prog.anl.s, o.tm), nb = neben(prog.anl.T, o.tm);
+      const akt0 = akt;
+      fahre("Elongation", prog.ela.T, prog.ela.s, n);
+      const aktM = (akt0 + akt) / 2;
+      const c = Math.min(1, prog.ela.s * tempo(prog.ela.T) * aktM / o.laenge);
+      const frei = Math.max(0, 1 - (N + M) / NMAX) / (1 + (N + M) / KHALB);   // viele Produkte: die Stränge paaren sich lieber wieder miteinander als mit den Primern
+      const E = EMAX * a * b * c * frei;
+      const Mneu = M * (1 + EMAX * a * c * frei) + N * nb * a * c * frei;   // Nebenprodukte entstehen an falschen Stellen und vermehren sich dann wie das Ziel
+      N = N * (1 + E); M = Mneu;
+      zyklen.push({n, t, N, M, E, akt, fDen: a, fAnl: b, fEla: c});
+    }
+    if (prog.ende && prog.ende.s > 0) fahre("Letzte Elongation", prog.ende.T, prog.ende.s, prog.n);
+    if (prog.halt !== undefined && prog.halt !== null) fahre("Kühlen", prog.halt, 0, prog.n);
+    return {spur, zyklen, phasen, dauer: t, tmProdukt: tmP, nmax: NMAX};
+  }
+
+  return {plan, erzeuge, start, neuUnten, neuOben, zyklus, zaehle, zahlen, tm, bewerte, lauf, KOMP};
 })();
